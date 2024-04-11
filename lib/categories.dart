@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_playground/flutter_topics.dart';
+import 'package:flutter_playground/models/flutter_topics.dart';
 import 'package:flutter_playground/sub_categories.dart';
 
 class CategoriesApp extends StatelessWidget {
@@ -10,7 +10,6 @@ class CategoriesApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
           appBar: AppBar(
-
             title: const Text('Widget catalog'),
           ),
           body: ListView.builder(

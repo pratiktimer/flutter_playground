@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_playground/page_navigation.dart';
-import 'flutter_topics.dart';
-import 'flutter_widgets_types.dart';
+import 'models/flutter_topics.dart';
+import 'models/flutter_widgets_types.dart';
 
 class SubCategoriesApp extends StatelessWidget {
   final FlutterTopic flutterTopic;

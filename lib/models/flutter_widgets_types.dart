@@ -1,4 +1,4 @@
-import 'package:flutter_playground/flutter_topics.dart';
+import 'package:flutter_playground/models/flutter_topics.dart';
 
 enum WidgetType {
   appbar(600),

@@ -37,6 +37,30 @@ class HomeScreen extends StatelessWidget {
                 child: const Center(child: Text('Widget catalog')),
               ),
             ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => const CategoriesApp(),
+                ));
+              },
+              child: Container(
+                height: 100,
+                color: Colors.amber[600],
+                child: const Center(child: Text('Packages')),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => const CategoriesApp(),
+                ));
+              },
+              child: Container(
+                height: 100,
+                color: Colors.amber[600],
+                child: const Center(child: Text('UI Designs')),
+              ),
+            ),
           ],
         ),
       ),
