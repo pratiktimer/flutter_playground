@@ -24,6 +24,15 @@ class HomePage extends StatelessWidget {
                   onPressed: () => context.go('/livecamera'),
                   child: const Text('Go to the Live Camera screen'),
                 ),
+                ElevatedButton(
+                  onPressed: () => context.go('/imagelabeling'),
+                  child: const Text('Go to the Image labeling screen'),
+                ),
+                ElevatedButton(
+                  onPressed: () => context.go('/livecameraimagelabeling'),
+                  child:
+                      const Text('Go to the Live Camera Image labeling screen'),
+                ),
               ],
             ),
           ),
