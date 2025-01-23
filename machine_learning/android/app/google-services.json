@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "41998864727",
+    "firebase_url": "https://weddingtegoa-a5daa-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "weddingtegoa-a5daa",
+    "storage_bucket": "weddingtegoa-a5daa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:41998864727:android:07c6f3303fab921b4e2e12",
+        "android_client_info": {
+          "package_name": "com.weddingtegoa.wedding"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClWAeRj08f1jeILpYm0D3rqnbin8dZJp0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

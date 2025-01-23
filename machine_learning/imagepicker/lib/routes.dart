@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:imagepicker/barcode_scanning_page.dart';
 import 'package:imagepicker/image_labeling_page.dart';
 import 'package:imagepicker/live_camera_image_labeling.dart';
 import 'package:imagepicker/live_camera_page.dart';
 
 import 'home_page.dart';
 import 'image_picker_page.dart';
+import 'live_camera_barcode_scanning.dart';
 
 /// The route configuration.
 final GoRouter router = GoRouter(
@@ -40,6 +42,18 @@ final GoRouter router = GoRouter(
           path: 'livecameraimagelabeling',
           builder: (BuildContext context, GoRouterState state) {
             return const LiveCameraImageLabelingPage();
+          },
+        ),
+        GoRoute(
+          path: 'barcodescanning',
+          builder: (BuildContext context, GoRouterState state) {
+            return const BarcodeScanningPage(title: '');
+          },
+        ),
+        GoRoute(
+          path: 'livebarcodescanning',
+          builder: (BuildContext context, GoRouterState state) {
+            return const LiveCameraBarcodeScanningPage();
           },
         ),
       ],

@@ -33,6 +33,14 @@ class HomePage extends StatelessWidget {
                   child:
                       const Text('Go to the Live Camera Image labeling screen'),
                 ),
+                ElevatedButton(
+                  onPressed: () => context.go('/barcodescanning'),
+                  child: const Text('Go to the barcode scanning screen'),
+                ),
+                ElevatedButton(
+                  onPressed: () => context.go('/livebarcodescanning'),
+                  child: const Text('Go to the live barcode scanning screen'),
+                ),
               ],
             ),
           ),
