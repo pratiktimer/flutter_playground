@@ -28,11 +28,38 @@ import 'package:flutter_riverpod_playground/pages/basic/basic_provider.dart';
 //   }
 // }
 
-class BasicPage extends ConsumerWidget {
+// class BasicPage extends ConsumerWidget {
+//   const BasicPage({super.key});
+//
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     final hello = ref.watch(helloProvider);
+//     final world = ref.watch(worldProvider);
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text('Provider'),
+//       ),
+//       body: Center(
+//           child: Text(
+//         '$hello $world',
+//         style: TextStyle(
+//           fontSize: 18,
+//           fontWeight: FontWeight.bold,
+//         ),
+//       )),
+//     );
+//   }
+// }
+class BasicPage extends ConsumerStatefulWidget {
   const BasicPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BasicPage> createState() => _BasicPageState();
+}
+
+class _BasicPageState extends ConsumerState<BasicPage> {
+@override
+  Widget build(BuildContext context) {
     final hello = ref.watch(helloProvider);
     final world = ref.watch(worldProvider);
     return Scaffold(
@@ -41,12 +68,12 @@ class BasicPage extends ConsumerWidget {
       ),
       body: Center(
           child: Text(
-        '$hello $world',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-      )),
+            '$hello $world',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          )),
     );
   }
 }
