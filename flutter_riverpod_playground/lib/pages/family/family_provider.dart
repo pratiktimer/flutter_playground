@@ -10,9 +10,9 @@ part 'family_provider.g.dart';
 // });
 
 @Riverpod(keepAlive: true)
-String familyHello(Ref ref, String name) {
+String familyHello(Ref ref, String username) {
   ref.onDispose(() {
-    print('[familyHelloProvider]$name is disposed');
+    print('[familyHelloProvider]$username is disposed');
   });
-  return "Hello $name";
+  return "Hello $username";
 }
