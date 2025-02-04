@@ -8,16 +8,17 @@ class BasicPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<int>(counterProvider, (previous, next) {
-      if (next == 5) {
-        showDialog(
-            context: context,
-            builder: (context) {
-              return CupertinoAlertDialog();
-            });
-      }
-    });
-    final value = ref.watch(counterProvider);
+    // ref.listen<int>(counterProvider, (previous, next) {
+    //   if (next == 5) {
+    //     showDialog(
+    //         context: context,
+    //         builder: (context) {
+    //           return CupertinoAlertDialog();
+    //         });
+    //   }
+    // });
+    // final value = ref.watch(counterProvider);
+    final value = ref.watch(ageProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('StateProvider'),
