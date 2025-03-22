@@ -1,15 +1,18 @@
 package com.prateektimer.dashcamcleaner
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import com.prateektimer.dashcamcleaner.ui.VideoCleanupScheduler
+import androidx.compose.ui.unit.dp
 import com.prateektimer.dashcamcleaner.ui.theme.DashCamCleanerTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,17 +22,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             DashCamCleanerTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    VideoCleanupScheduler()
+                    VideoCleanupScheduler(
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(
+    name = "Landscape Preview",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_TYPE_UNDEFINED,
+    device = Devices.DEFAULT,
+    widthDp = 640, // Set a wider width for landscape
+    heightDp = 400 // Set a shorter height for landscape
+)
 @Composable
-fun VideoCleanupSchedulerPreview() {
+fun VideoCleanupSchedulerLandscapePreview() {
     DashCamCleanerTheme {
-        VideoCleanupScheduler()
+        VideoCleanupScheduler(Modifier.padding(16.dp))
     }
 }

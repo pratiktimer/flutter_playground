@@ -1,13 +1,14 @@
-package com.prateektimer.dashcamcleaner.ui
+package com.prateektimer.dashcamcleaner
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -18,24 +19,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import java.io.File
 import java.util.*
 import androidx.work.*
-import com.prateektimer.dashcamcleaner.VideoDeletionWorker
 import java.util.concurrent.TimeUnit
 
 @Composable
-fun VideoCleanupScheduler() {
+fun VideoCleanupScheduler(modifier: Modifier) {
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("DashCamCleanerPrefs", Context.MODE_PRIVATE)
 
     var folderUri by remember { mutableStateOf<Uri?>(null) }
-    var deletionCondition by remember { mutableStateOf(DeletionCondition.DATE) }
     var selectedDate by remember { mutableStateOf(Calendar.getInstance().time) }
-    var durationMonths by remember { mutableStateOf(0) }
-    var scheduleInterval by remember { mutableStateOf(ScheduleInterval.DAILY) }
+    var durationMonths by remember { mutableStateOf(3) }
     var previewVideos by remember { mutableStateOf(listOf<String>()) }
-    var dropdownExpanded by remember { mutableStateOf(false) } // State for dropdown menu
 
     // Launcher for folder picker
     val folderPickerLauncher = rememberLauncherForActivityResult(
@@ -57,48 +53,28 @@ fun VideoCleanupScheduler() {
     LaunchedEffect(Unit) {
         val savedUri = sharedPreferences.getString("folderUri", null)
         folderUri = savedUri?.let { Uri.parse(it) }
+        val savedDate = sharedPreferences.getLong("deletionDate", 0L)
+        if (savedDate > 0) {
+            selectedDate = Date(savedDate)
+        }
+        durationMonths = sharedPreferences.getInt("durationMonths", 3) // Default to 3 months
     }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.Start
+        modifier = modifier
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         item {
             // Button to open folder picker
             Button(onClick = { folderPickerLauncher.launch(null) }) {
-                Text("Select Folder")
-            }
-
-            // Display selected folder URI
-            Text("Selected Folder: ${folderUri?.toString() ?: "None"}")
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Radio buttons for deletion condition
-            Text("Deletion Condition:")
-            Row {
-                RadioButton(
-                    selected = deletionCondition == DeletionCondition.DATE,
-                    onClick = { deletionCondition = DeletionCondition.DATE }
-                )
-                Text("Specific Date")
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                RadioButton(
-                    selected = deletionCondition == DeletionCondition.DURATION,
-                    onClick = { deletionCondition = DeletionCondition.DURATION }
-                )
-                Text("Duration (Months)")
+                Text("Selected Folder: ${folderUri?.toString() ?: "None"}")
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // DatePicker and TimePicker for specific date and time
-            if (deletionCondition == DeletionCondition.DATE) {
-                Button(onClick = {
+            Button(onClick = {
                     // Open DatePickerDialog
                     val calendar = Calendar.getInstance()
                     val datePickerDialog = DatePickerDialog(
@@ -126,46 +102,29 @@ fun VideoCleanupScheduler() {
                 }) {
                     Text("Select Date & Time: ${selectedDate.toString()}")
                 }
-            }
-
-            // Number input for specifying months
-            if (deletionCondition == DeletionCondition.DURATION) {
-                TextField(
-                    value = durationMonths.toString(),
-                    onValueChange = { durationMonths = it.toIntOrNull() ?: 0 },
-                    label = { Text("Duration (Months)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Dropdown for scheduling interval
-            Text("Schedule Interval:")
-            Box {
-                Button(onClick = { dropdownExpanded = true }) {
-                    Text(scheduleInterval.name)
-                }
-                DropdownMenu(
-                    expanded = dropdownExpanded,
-                    onDismissRequest = { dropdownExpanded = false }
-                ) {
-                    ScheduleInterval.values().forEach { interval ->
-                        DropdownMenuItem(
-                            text = { Text(interval.name) },
-                            onClick = {
-                                scheduleInterval = interval
-                                dropdownExpanded = false // Close dropdown after selection
-                            }
-                        )
-                    }
-                }
-            }
+            // Number input for specifying months
+            TextField(
+                value = if (durationMonths == 0) "" else durationMonths.toString(),
+                onValueChange = {
+                    durationMonths = it.toIntOrNull() ?: 0  // Allow empty input
+                    sharedPreferences.edit().putInt("durationMonths", durationMonths).apply()
+                },
+                label = { Text("Duration (Months)") },
+                modifier = Modifier.width(200.dp),
+                singleLine = true
+            )
+
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Button to preview files before deletion
             Button(onClick = {
+                // Reset previewVideos before adding new ones
+                previewVideos = emptyList()
                 // Implement preview logic using ContentResolver
                 folderUri?.let { uri ->
                     val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
@@ -194,40 +153,46 @@ fun VideoCleanupScheduler() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             // Confirm/Delete button
             Button(onClick = {
-                // Prepare input data for the worker
-                val inputData = workDataOf(
-                    "folderUri" to (folderUri?.toString() ?: ""),
-                    "deletionDate" to selectedDate.time
-                )
-
-                // Create a periodic work request based on the selected interval
-                val workRequest = when (scheduleInterval) {
-                    ScheduleInterval.DAILY -> PeriodicWorkRequestBuilder<VideoDeletionWorker>(1, TimeUnit.DAYS)
-                    ScheduleInterval.WEEKLY -> PeriodicWorkRequestBuilder<VideoDeletionWorker>(7, TimeUnit.DAYS)
-                    ScheduleInterval.MONTHLY -> PeriodicWorkRequestBuilder<VideoDeletionWorker>(30, TimeUnit.DAYS)
-                }.setInputData(inputData).build()
-
-                // Enqueue the work request
-                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                    "VideoDeletionWork",
-                    ExistingPeriodicWorkPolicy.REPLACE,
-                    workRequest
-                )
+                folderUri?.let { uri ->
+                    scheduleInitialDeletion(
+                        context = context, // Pass the correct context
+                        folderUri = uri.toString(),
+                        selectedDate = selectedDate.time,
+                        durationMonths = durationMonths
+                    )
+                } ?: Toast.makeText(context, "Please select a folder", Toast.LENGTH_SHORT).show()
             }) {
                 Text("Confirm/Delete")
             }
+
         }
     }
 }
 
-enum class DeletionCondition {
-    DATE, DURATION
+fun scheduleInitialDeletion(context: Context, folderUri: String, selectedDate: Long, durationMonths: Int) {
+    val currentTime = System.currentTimeMillis()
+    val delay = if (selectedDate > currentTime) selectedDate - currentTime else 1000 // At least 1 second delay
+
+    val workRequest = OneTimeWorkRequestBuilder<VideoDeletionWorker>()
+        .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+        .setInputData(
+            workDataOf(
+                "folderUri" to folderUri,
+                "deletionDate" to selectedDate,
+                "durationMonths" to durationMonths
+            )
+        )
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniqueWork(
+        "VideoDeletionWork",
+        ExistingWorkPolicy.REPLACE,
+        workRequest
+    )
+
+    Log.d("Scheduler", "Initial deletion scheduled for: $selectedDate with delay: $delay ms")
 }
 
-enum class ScheduleInterval {
-    DAILY, WEEKLY, MONTHLY
-} 
+
