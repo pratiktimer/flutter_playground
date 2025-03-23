@@ -24,7 +24,7 @@ import androidx.work.*
 import java.util.concurrent.TimeUnit
 
 @Composable
-fun VideoCleanupScheduler(modifier: Modifier) {
+fun VideoCleanupScheduler(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("DashCamCleanerPrefs", Context.MODE_PRIVATE)
 
@@ -33,61 +33,62 @@ fun VideoCleanupScheduler(modifier: Modifier) {
     var durationMonths by remember { mutableStateOf(3) }
     var previewVideos by remember { mutableStateOf(listOf<String>()) }
 
-    // Launcher for folder picker
     val folderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
         uri?.let {
             folderUri = it
-            // Persist URI permissions
             context.contentResolver.takePersistableUriPermission(
                 it,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
-            // Save the folder URI to SharedPreferences
             sharedPreferences.edit().putString("folderUri", it.toString()).apply()
         }
     }
 
-    // Load saved folder URI
     LaunchedEffect(Unit) {
-        val savedUri = sharedPreferences.getString("folderUri", null)
-        folderUri = savedUri?.let { Uri.parse(it) }
+        folderUri = sharedPreferences.getString("folderUri", null)?.let { Uri.parse(it) }
         val savedDate = sharedPreferences.getLong("deletionDate", 0L)
-        if (savedDate > 0) {
-            selectedDate = Date(savedDate)
-        }
-        durationMonths = sharedPreferences.getInt("durationMonths", 3) // Default to 3 months
+        if (savedDate > 0) selectedDate = Date(savedDate)
+        durationMonths = sharedPreferences.getInt("durationMonths", 3)
     }
 
-    LazyColumn(
+    Column(
         modifier = modifier
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item {
-            // Button to open folder picker
-            Button(onClick = { folderPickerLauncher.launch(null) }) {
-                Text("Selected Folder: ${folderUri?.toString() ?: "None"}")
-            }
+        Text("AutoClean Dash", style = MaterialTheme.typography.headlineSmall)
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Button(onClick = {
-                    // Open DatePickerDialog
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Folder Picker Button
+                OutlinedButton(onClick = { folderPickerLauncher.launch(null) }) {
+                    Text("Select Folder: ${folderUri?.lastPathSegment ?: "None"}")
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Date Picker
+                OutlinedButton(onClick = {
                     val calendar = Calendar.getInstance()
-                    val datePickerDialog = DatePickerDialog(
+                    DatePickerDialog(
                         context,
                         { _, year, month, dayOfMonth ->
                             calendar.set(year, month, dayOfMonth)
-                            // Open TimePickerDialog after date is set
                             TimePickerDialog(
                                 context,
                                 { _, hourOfDay, minute ->
                                     calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
                                     calendar.set(Calendar.MINUTE, minute)
                                     selectedDate = calendar.time
+                                    sharedPreferences.edit().putLong("deletionDate", selectedDate.time).apply()
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
                                 calendar.get(Calendar.MINUTE),
@@ -97,35 +98,33 @@ fun VideoCleanupScheduler(modifier: Modifier) {
                         calendar.get(Calendar.YEAR),
                         calendar.get(Calendar.MONTH),
                         calendar.get(Calendar.DAY_OF_MONTH)
-                    )
-                    datePickerDialog.show()
+                    ).show()
                 }) {
-                    Text("Select Date & Time: ${selectedDate.toString()}")
+                    Text("Select Date & Time: ${selectedDate}")
                 }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // Number input for specifying months
-            TextField(
-                value = if (durationMonths == 0) "" else durationMonths.toString(),
-                onValueChange = {
-                    durationMonths = it.toIntOrNull() ?: 0  // Allow empty input
-                    sharedPreferences.edit().putInt("durationMonths", durationMonths).apply()
-                },
-                label = { Text("Duration (Months)") },
-                modifier = Modifier.width(200.dp),
-                singleLine = true
-            )
+                // Duration Input
+                OutlinedTextField(
+                    value = if (durationMonths == 0) "" else durationMonths.toString(),
+                    onValueChange = {
+                        durationMonths = it.toIntOrNull() ?: 0
+                        sharedPreferences.edit().putInt("durationMonths", durationMonths).apply()
+                    },
+                    label = { Text("Retention Period (Months)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        }
 
+        Spacer(modifier = Modifier.height(16.dp))
 
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Button to preview files before deletion
-            Button(onClick = {
-                // Reset previewVideos before adding new ones
+        // Preview Videos Button
+        ElevatedButton(
+            onClick = {
                 previewVideos = emptyList()
-                // Implement preview logic using ContentResolver
                 folderUri?.let { uri ->
                     val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
                     val cursor = context.contentResolver.query(childrenUri, null, null, null, null)
@@ -139,34 +138,53 @@ fun VideoCleanupScheduler(modifier: Modifier) {
                         }
                     }
                 }
-            }) {
-                Text("Preview Videos")
-            }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Preview Videos")
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            // Display previewed videos
-            if (previewVideos.isNotEmpty()) {
-                Text("Videos to be deleted:")
-                previewVideos.forEach { video ->
-                    Text(video)
+        // Video List
+        if (previewVideos.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Videos to be deleted:", style = MaterialTheme.typography.bodyLarge)
+                    previewVideos.forEach { video ->
+                        Text(video, style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
+        } else {
+            Text(
+                "No videos found for deletion.",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
 
-            // Confirm/Delete button
-            Button(onClick = {
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Confirm/Delete Button
+        Button(
+            onClick = {
                 folderUri?.let { uri ->
                     scheduleInitialDeletion(
-                        context = context, // Pass the correct context
+                        context = context,
                         folderUri = uri.toString(),
                         selectedDate = selectedDate.time,
                         durationMonths = durationMonths
                     )
                 } ?: Toast.makeText(context, "Please select a folder", Toast.LENGTH_SHORT).show()
-            }) {
-                Text("Confirm/Delete")
-            }
-
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Confirm & Schedule Cleanup")
         }
     }
 }
