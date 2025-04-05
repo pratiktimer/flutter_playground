@@ -226,11 +226,13 @@ fun VideoCleanupScheduler(modifier: Modifier = Modifier) {
 }
 
 fun scheduleInitialDeletion(context: Context, folderUri: String, selectedDate: Long, durationMonths: Int) {
-    val currentTime = System.currentTimeMillis()
-    val delay = if (selectedDate > currentTime) selectedDate - currentTime else 1000 // At least 1 second delay
+    //val currentTime = System.currentTimeMillis()
+    //Long delay = 1000
+        //if (selectedDate > currentTime) selectedDate - currentTime else 1000
+    // At least 1 second delay
 
     val workRequest = OneTimeWorkRequestBuilder<VideoDeletionWorker>()
-        .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+        .setInitialDelay(1000, TimeUnit.MILLISECONDS)
         .setInputData(
             workDataOf(
                 "folderUri" to folderUri,
@@ -246,7 +248,7 @@ fun scheduleInitialDeletion(context: Context, folderUri: String, selectedDate: L
         workRequest
     )
 
-    Log.d("Scheduler", "Initial deletion scheduled for: $selectedDate with delay: $delay ms")
+    Log.d("Scheduler", "Initial deletion scheduled for: $selectedDate with delay: 1000 ms")
 }
 
 
