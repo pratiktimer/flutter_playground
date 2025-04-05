@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.documentfile.provider.DocumentFile
 import java.util.*
 import androidx.work.*
+import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -60,7 +62,7 @@ fun VideoCleanupScheduler(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .padding(16.dp)
             .verticalScroll(rememberScrollState()), // Make it scrollable
-        horizontalAlignment = Alignment.CenterHorizontally
+
     ) {
         Text("AutoClean Dash", style = MaterialTheme.typography.headlineSmall)
 
@@ -70,7 +72,9 @@ fun VideoCleanupScheduler(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(16.dp)) {
                 // Folder Picker Button
                 OutlinedButton(onClick = { folderPickerLauncher.launch(null) }) {
                     Text("Select Folder: ${folderUri?.lastPathSegment ?: "None"}")
@@ -116,7 +120,8 @@ fun VideoCleanupScheduler(modifier: Modifier = Modifier) {
                         sharedPreferences.edit().putInt("durationMonths", durationMonths).apply()
                     },
                     label = { Text("Retention Period (Months)") },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(150.dp,0.dp,150.dp,0.dp),
                     singleLine = true
                 )
             }
@@ -128,15 +133,40 @@ fun VideoCleanupScheduler(modifier: Modifier = Modifier) {
         ElevatedButton(
             onClick = {
                 previewVideos = emptyList()
+
                 folderUri?.let { uri ->
-                    val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
+                    val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+                        uri,
+                        DocumentsContract.getTreeDocumentId(uri)
+                    )
+
+                    val calendar = Calendar.getInstance().apply {
+                        timeInMillis = selectedDate.time
+                        add(Calendar.MONTH, -durationMonths)
+                    }
+                    val deletionCutoff = calendar.timeInMillis
+                    val dateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+
                     val cursor = context.contentResolver.query(childrenUri, null, null, null, null)
                     cursor?.use {
                         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        val docIdIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
                         while (cursor.moveToNext()) {
                             val name = cursor.getString(nameIndex)
-                            if (name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mkv")) {
-                                previewVideos = previewVideos + name
+                            val docId = cursor.getString(docIdIndex)
+                            val fileUri = DocumentsContract.buildDocumentUriUsingTree(uri, docId)
+                            val docFile = DocumentFile.fromSingleUri(context, fileUri)
+
+                            if (docFile != null && docFile.isFile) {
+                                val lastModified = docFile.lastModified()
+                                Log.d("PreviewCheck", "File: $name, Modified: $lastModified")
+
+                                if ((name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mkv")) &&
+                                    lastModified > 0 && lastModified < deletionCutoff
+                                ) {
+                                    val formattedDate = dateFormatter.format(Date(lastModified))
+                                    previewVideos = previewVideos + "$name (Last Modified: $formattedDate)"
+                                }
                             }
                         }
                     }
@@ -146,6 +176,9 @@ fun VideoCleanupScheduler(modifier: Modifier = Modifier) {
         ) {
             Text("Preview Videos")
         }
+
+
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
