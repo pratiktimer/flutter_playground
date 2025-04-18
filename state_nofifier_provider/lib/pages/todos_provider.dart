@@ -8,14 +8,14 @@ class TodosProvider extends StateNotifier<List<Todo>> {
     state = [...state, Todo.add(desc)];
   }
 
-  void toggleTodo(int id) {
+  void toggleTodo(String id) {
     state = [
       for (final todo in state)
         if (todo.id == id) todo.copyWith(isComplete: !todo.isComplete) else todo
     ];
   }
 
-  void removeTodo(int id) {
+  void removeTodo(String id) {
     state = [
       for (final todo in state)
         if (todo.id != id) todo
